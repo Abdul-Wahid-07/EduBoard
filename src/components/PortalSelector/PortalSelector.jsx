@@ -2,7 +2,7 @@
 import { FaUserGraduate, FaUserShield } from "react-icons/fa";
 
 const roles = [
-  { label: "Student", value: "student", icon: FaUserGraduate },
+  { label: "User", value: "user", icon: FaUserGraduate },
   { label: "Authority", value: "authority", icon: FaUserShield },
 ];
 

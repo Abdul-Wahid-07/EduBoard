@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react"; // for hamburger icons
 import { useAuth } from "../Auth/Auth";
+import Image from "next/image";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -20,11 +21,17 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <div className="flex items-center">
-            <i className="fas fa-clipboard-list text-3xl text-indigo-600 mr-3"></i>
+          <div className="flex items-center space-x-2 pl-0">
+            <Image
+              src="/logo1.png"
+              alt="EduBoard Logo"
+              width={60}
+              height={60}
+              className="rounded-2xl shadow-md border border-gray-200 object-cover hover:scale-125"
+            />
             <span className="text-2xl font-bold text-gray-800">EduBoard</span>
           </div>
 
