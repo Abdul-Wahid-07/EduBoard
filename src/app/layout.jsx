@@ -7,6 +7,9 @@ import { AuthProvider } from "@/components/Auth/Auth";
 export const metadata = {
   title: "EduBoard - Digital Notice Board",
   description: "Digital Board System for instant notifications",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {

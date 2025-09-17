@@ -16,7 +16,7 @@ export default function NotificationCard({ notification, toggleRead }) {
         <span
           className={`px-3 py-1 text-xs rounded-full ${
             notification.priority === "urgent"
-              ? "bg-red-100 text-red-800"
+              ? "bg-red-500 text-white"
               : notification.priority === "high"
               ? "bg-orange-100 text-orange-800"
               : "bg-blue-100 text-blue-800"
