@@ -16,21 +16,23 @@ export default function NotificationCard({ notification, toggleRead }) {
         <span
           className={`px-3 py-1 text-xs rounded-full ${
             notification.priority === "urgent"
-              ? "bg-red-500 text-white"
+              ? "bg-red-400 text-red-800"
               : notification.priority === "high"
-              ? "bg-orange-100 text-orange-800"
+              ? "bg-orange-300 text-orange-800"
               : "bg-blue-100 text-blue-800"
           }`}
         >
           {notification.priority.toUpperCase()}
         </span>
       </div>
+
       <p className="text-gray-600 mb-4">{notification.message}</p>
+
       <div className="flex justify-between items-center text-sm text-gray-500">
         <span>{notification.timestamp}</span>
         <button
-          onClick={() => toggleRead(notification.id)}
-          className={`text-sm ${
+          onClick={() => toggleRead(notification.id, notification.read)} // pass both id and state
+          className={`text-sm font-medium cursor-pointer ${
             notification.read ? "text-gray-500" : "text-indigo-600"
           } hover:underline`}
         >

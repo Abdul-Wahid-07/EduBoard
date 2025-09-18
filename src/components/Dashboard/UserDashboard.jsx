@@ -2,11 +2,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import NotificationCard from "./NotificationCard";
+import { toast } from "react-toastify";
 
 export default function UserDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [loading, setLoading] = useState(false)
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -15,10 +17,9 @@ export default function UserDashboard() {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await axios.get(
-          `${API_URL}/api/notifications`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await axios.get(`${API_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const formatted = res.data.map((n) => ({
           id: n._id,
@@ -26,7 +27,7 @@ export default function UserDashboard() {
           message: n.message,
           priority: n.priority,
           timestamp: new Date(n.createdAt).toLocaleString(),
-          read: false,
+          read: n.isRead, // use backend-provided flag
         }));
 
         setNotifications(formatted);
@@ -38,15 +39,57 @@ export default function UserDashboard() {
     fetchNotifications();
   }, []);
 
-  const toggleRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+  const toggleRead = async (id, currentRead) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    // Call backend to update this single notification
+    const res = await axios.patch(
+      `${API_URL}/api/notifications/${id}`,
+      { isRead: !currentRead },
+      { headers: { Authorization: `Bearer ${token}` } }
     );
+
+    if(res.status === 200){
+      toast.success(res.data.message);
+      // Update local state after success
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: !currentRead } : n))
+      );
+    }
+
+  } catch (err) {
+    console.error("Error updating notification:", err.response?.data || err.message);
+    toast.error("Failed to update notification");
+  }
+};
+
+
+  // Updated markAllAsRead with backend call
+  const markAllAsRead = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.patch(
+        `${API_URL}/api/notifications/mark-all-read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.status === 200) {
+        toast.success(res.data.message);
+      }
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Error marking all as read:", err.response?.data || err.message);
+      toast.error(err.response?.data?.message || "Error marking all as read");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
 
   const filteredNotifications = notifications.filter((n) => {
     const statusMatch =
@@ -67,7 +110,7 @@ export default function UserDashboard() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border px-4 py-2 rounded-lg"
+          className="border px-4 py-2 rounded-lg cursor-pointer"
         >
           <option value="all">All</option>
           <option value="unread">Unread</option>
@@ -76,7 +119,7 @@ export default function UserDashboard() {
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
-          className="border px-4 py-2 rounded-lg"
+          className="border px-4 py-2 rounded-lg cursor-pointer"
         >
           <option value="all">All Priorities</option>
           <option value="urgent">Urgent</option>
@@ -85,10 +128,13 @@ export default function UserDashboard() {
         </select>
         <button
           onClick={markAllAsRead}
-          className="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+          disabled={loading}
+          className="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-lg cursor-pointer
+                    hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
         >
-          Mark All as Read
+          {loading ? "Marking..." : "Mark All as Read"}
         </button>
+
       </div>
 
       {/* Notifications List */}
@@ -103,7 +149,7 @@ export default function UserDashboard() {
             <NotificationCard
               key={n.id}
               notification={n}
-              toggleRead={toggleRead}
+              toggleRead={() => toggleRead(n.id, n.read)}
             />
           ))}
         </div>

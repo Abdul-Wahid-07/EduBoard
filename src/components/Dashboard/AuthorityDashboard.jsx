@@ -1,12 +1,16 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function AuthorityDashboard() {
   const [notifications, setNotifications] = useState([]);
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
-  const [priority, setPriority] = useState("normal");
+
+  const [formData, setFormData] = useState({
+    title: "",
+    message: "",
+    priority: "normal",
+  })
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -26,6 +30,14 @@ export default function AuthorityDashboard() {
     fetchNotifications();
   }, [API_URL]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     try {
@@ -33,16 +45,22 @@ export default function AuthorityDashboard() {
 
       const res = await axios.post(
         `${API_URL}/api/notifications/`,
-        { title, message, priority },
+        formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      if(res.status === 201){
+        setFormData({
+          title: "",
+          message: "",
+          priority: "normal",
+        })
+        toast.success("Message sent successfully")
+      }
+
       setNotifications([res.data, ...notifications]);
-      setTitle("");
-      setMessage("");
-      setPriority("normal");
     } catch (err) {
-      console.error("Error sending notification:", err.response?.data || err.message);
+      toast.error("Error sending notification:", err.response?.data || err.data.message);
     }
   };
 
@@ -67,21 +85,24 @@ export default function AuthorityDashboard() {
         <form className="space-y-4" onSubmit={handleSend}>
           <input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
             placeholder="Enter title"
             className="w-full border px-4 py-3 rounded-lg"
           />
           <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={formData.message}
+            name="message"
+            onChange={handleChange}
             placeholder="Enter message"
             rows="4"
             className="w-full border px-4 py-3 rounded-lg"
           ></textarea>
           <select
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
+            value={formData.priority}
+            name="priority"
+            onChange={handleChange}
             className="border px-4 py-3 rounded-lg"
           >
             <option value="normal">Normal</option>
