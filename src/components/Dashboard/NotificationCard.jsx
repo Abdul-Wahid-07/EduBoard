@@ -1,10 +1,11 @@
-export default function NotificationCard({ notification, toggleRead }) {
+const NotificationCard = ({ notification, toggleRead }) => {
   return (
     <div
       className={`bg-white rounded-2xl shadow-lg p-6 ${
         notification.read ? "opacity-75" : ""
       } hover:shadow-xl transition duration-200`}
     >
+      {/* Title + Priority */}
       <div className="flex justify-between items-start mb-3">
         <h3
           className={`text-lg text-gray-800 ${
@@ -26,8 +27,30 @@ export default function NotificationCard({ notification, toggleRead }) {
         </span>
       </div>
 
+      {/* Message */}
       <p className="text-gray-600 mb-4">{notification.message}</p>
 
+      {/* Image (if available) */}
+      {notification.noticeImage && (
+        <div className="mb-4">
+          <img
+            src={notification.noticeImage}
+            alt="Notice"
+            className="rounded-lg max-h-64 object-contain border"
+          />
+
+          <a
+            href={notification.noticeImage}
+            target="_blank"
+            download
+            className="mt-2 inline-block text-indigo-600 text-sm hover:underline"
+          >
+            View Notice
+          </a>
+        </div>
+      )}
+
+      {/* Timestamp + Read Toggle */}
       <div className="flex justify-between items-center text-sm text-gray-500">
         <span>{notification.timestamp}</span>
         <button
@@ -42,3 +65,5 @@ export default function NotificationCard({ notification, toggleRead }) {
     </div>
   );
 }
+
+export default NotificationCard;

@@ -8,7 +8,9 @@ export default function UserDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [earliestDate, setEarliestDate] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -26,46 +28,62 @@ export default function UserDashboard() {
           title: n.title,
           message: n.message,
           priority: n.priority,
+          noticeImage: n.noticeImage ? `${API_URL}${n.noticeImage}` : null,
+          createdAt: n.createdAt,
           timestamp: new Date(n.createdAt).toLocaleString(),
-          read: n.isRead, // use backend-provided flag
+          read: n.isRead,
         }));
 
         setNotifications(formatted);
+
+        // find earliest date
+        if (formatted.length > 0) {
+          const earliest = formatted.reduce((min, n) =>
+            new Date(n.createdAt) < new Date(min.createdAt) ? n : min
+          );
+          const eDate = new Date(earliest.createdAt);
+          eDate.setHours(0, 0, 0, 0);
+          setEarliestDate(eDate);
+        }
       } catch (err) {
-        console.error("Error fetching notifications:", err.response?.data || err.message);
+        console.error(
+          "Error fetching notifications:",
+          err.response?.data || err.message
+        );
+        toast.error("Failed to fetch notifications");
       }
     };
 
     fetchNotifications();
-  }, []);
+  }, [API_URL]);
 
   const toggleRead = async (id, currentRead) => {
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    // Call backend to update this single notification
-    const res = await axios.patch(
-      `${API_URL}/api/notifications/${id}`,
-      { isRead: !currentRead },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if(res.status === 200){
-      toast.success(res.data.message);
-      // Update local state after success
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: !currentRead } : n))
+      const res = await axios.patch(
+        `${API_URL}/api/notifications/${id}`,
+        { isRead: !currentRead },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      if (res.status === 200) {
+        toast.success(res.data.message);
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === id ? { ...n, read: !currentRead } : n
+          )
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Error updating notification:",
+        err.response?.data || err.message
+      );
+      toast.error("Failed to update notification");
     }
+  };
 
-  } catch (err) {
-    console.error("Error updating notification:", err.response?.data || err.message);
-    toast.error("Failed to update notification");
-  }
-};
-
-
-  // Updated markAllAsRead with backend call
   const markAllAsRead = async () => {
     setLoading(true);
     try {
@@ -81,29 +99,54 @@ export default function UserDashboard() {
         toast.success(res.data.message);
       }
 
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, read: true }))
+      );
     } catch (err) {
-      console.error("Error marking all as read:", err.response?.data || err.message);
+      console.error(
+        "Error marking all as read:",
+        err.response?.data || err.message
+      );
       toast.error(err.response?.data?.message || "Error marking all as read");
     } finally {
       setLoading(false);
     }
   };
 
-
+  // --- Filtering (status + priority + date) ---
   const filteredNotifications = notifications.filter((n) => {
     const statusMatch =
       statusFilter === "all" ||
       (statusFilter === "read" && n.read) ||
       (statusFilter === "unread" && !n.read);
+
     const priorityMatch =
       priorityFilter === "all" || priorityFilter === n.priority;
-    return statusMatch && priorityMatch;
+
+    const notifDate = new Date(n.createdAt).toDateString();
+    const currDate = currentDate.toDateString();
+    const dateMatch = notifDate === currDate;
+
+    return statusMatch && priorityMatch && dateMatch;
   });
 
+  const changeDate = (days) => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() + days);
+      return newDate;
+    });
+  };
+
+  // Today (for disabling "Next →")
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">My Notifications</h1>
+    <div className="max-w mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gradient-to-tl from-blue-500 to-gray-300 min-h-screen">
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">
+        My Notifications
+      </h1>
 
       {/* Filters */}
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 flex flex-wrap gap-4">
@@ -134,7 +177,39 @@ export default function UserDashboard() {
         >
           {loading ? "Marking..." : "Mark All as Read"}
         </button>
+      </div>
 
+      {/* Date Navigation */}
+      <div className="flex items-center justify-center gap-6 mb-6">
+        <button
+          onClick={() => changeDate(-1)}
+          disabled={
+            earliestDate &&
+            currentDate.toDateString() === earliestDate.toDateString()
+          }
+          className={`px-3 py-2 rounded-lg
+            ${earliestDate &&
+            currentDate.toDateString() === earliestDate.toDateString()
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gray-200 hover:bg-gray-300"}`}
+        >
+          ← Previous
+        </button>
+
+        <h2 className="text-lg font-semibold">
+          {currentDate.toDateString()}
+        </h2>
+
+        <button
+          onClick={() => changeDate(1)}
+          disabled={currentDate.toDateString() === today.toDateString()}
+          className={`px-3 py-2 rounded-lg 
+            ${currentDate.toDateString() === today.toDateString()
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gray-200 hover:bg-gray-300"}`}
+        >
+          Next →
+        </button>
       </div>
 
       {/* Notifications List */}

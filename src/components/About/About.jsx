@@ -4,7 +4,7 @@ import { FaLightbulb, FaShieldAlt, FaHeart } from "react-icons/fa";
 
 const AboutPage = () => {
   return (
-    <div className="py-20 bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-screen">
+    <div className="py-20 min-h-screen bg-gradient-to-tl from-blue-500 to-gray-300">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         
         {/* Heading */}

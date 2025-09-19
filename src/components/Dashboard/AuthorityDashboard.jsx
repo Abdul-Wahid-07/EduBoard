@@ -10,7 +10,9 @@ export default function AuthorityDashboard() {
     title: "",
     message: "",
     priority: "normal",
-  })
+  });
+  const [noticeImage, setNoticeImage] = useState(null);
+  const [preview, setPreview] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,7 +26,10 @@ export default function AuthorityDashboard() {
         });
         setNotifications(res.data);
       } catch (err) {
-        console.error("Error fetching notifications:", err.response?.data || err.message);
+        console.error(
+          "Error fetching notifications:",
+          err.response?.data || err.message
+        );
       }
     };
     fetchNotifications();
@@ -38,29 +43,48 @@ export default function AuthorityDashboard() {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNoticeImage(file);
+      setPreview(URL.createObjectURL(file)); // preview
+    }
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.post(
-        `${API_URL}/api/notifications/`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const data = new FormData();
+      data.append("title", formData.title);
+      data.append("message", formData.message);
+      data.append("priority", formData.priority);
+      if (noticeImage) {
+        data.append("noticeImage", noticeImage);
+      }
 
-      if(res.status === 201){
+      const res = await axios.post(`${API_URL}/api/notifications/`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (res.status === 201) {
         setFormData({
           title: "",
           message: "",
           priority: "normal",
-        })
-        toast.success("Message sent successfully")
+        });
+        setNoticeImage(null);
+        setPreview(null);
+        toast.success("Message sent successfully");
+        setNotifications([res.data, ...notifications]);
       }
-
-      setNotifications([res.data, ...notifications]);
     } catch (err) {
-      toast.error("Error sending notification:", err.response?.data || err.data.message);
+      toast.error("Error sending notification");
+      console.error(err);
     }
   };
 
@@ -72,7 +96,7 @@ export default function AuthorityDashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gradient-to-tl from-blue-500 to-gray-300">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         Authority Dashboard
       </h1>
@@ -109,6 +133,24 @@ export default function AuthorityDashboard() {
             <option value="high">High</option>
             <option value="urgent">Urgent</option>
           </select>
+
+          {/* File upload */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="w-full border px-4 py-3 rounded-lg"
+          />
+
+          {/* Preview */}
+          {preview && (
+            <img
+              src={preview}
+              alt="Preview"
+              className="mt-2 rounded-lg max-h-64 object-cover"
+            />
+          )}
+
           <button className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">
             Send Notification
           </button>
@@ -138,6 +180,26 @@ export default function AuthorityDashboard() {
                   <span className="font-semibold">Date & Time: </span>
                   {formatDate(notif.createdAt)}
                 </p>
+
+                {/* Show uploaded image */}
+                {notif.noticeImage && (
+                  <img
+                    src={`${API_URL}${notif.noticeImage}`}
+                    alt="Notice"
+                    className="mt-2 rounded-lg max-h-64 object-cover border"
+                  />
+                )}
+
+                {notif.noticeImage && (
+                  <a
+                    href={`${API_URL}${notif.noticeImage}`}
+                    target="_blank"
+                    download
+                    className="mt-2 inline-block text-indigo-600 text-sm hover:underline"
+                  >
+                    View Notice
+                  </a>
+                )}
               </li>
             ))}
           </ul>

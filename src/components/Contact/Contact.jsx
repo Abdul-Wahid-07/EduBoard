@@ -52,7 +52,7 @@ const ContactForm = () => {
   };
 
   return (
-    <div className="py-16 sm:py-20 bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-screen">
+    <div className="py-16 sm:py-20 bg-gradient-to-tl from-blue-500 to-gray-300 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
         <div className="text-center mb-12 sm:mb-16">
